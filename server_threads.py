@@ -2,7 +2,7 @@ import socket
 from threading import Thread
 import tqdm
 import os
-
+from time import sleep
 
 SEPARATOR = "<SEPARATOR>"
 clients = []
@@ -20,13 +20,13 @@ class ClientListener(Thread):
         # \033[F – symbol to move the cursor at the beginning of current line (Ctrl+A)
         # \033[K – symbol to clear everything till the end of current line (Ctrl+K)
         self.sock.sendall('\033[F\033[K'.encode())
-        data = 'me> '.encode() + data
+        data = 'me> '.encode() + data.encode()
         # send the message back to user
         self.sock.sendall(data)
 
     # broadcast the message with name prefix eg: 'u1> '
     def _broadcast(self, data):
-        data = (self.name + '> ').encode() + data
+        data = (self.name + '> ').encode() + data.encode()
         for u in clients:
             # send to everyone except current client
             if u == self.sock:
@@ -48,16 +48,16 @@ class ClientListener(Thread):
             filename = os.path.basename(filename)
             filesize = int(filesize)
             f = open(filename, "w")
-            with tqdm.tqdm(range(filesize), f"Receiving {buf1+'.'+buf2}", unit="B", unit_scale=True, unit_divisor=1024) as pbar:
-                while True:
+            with tqdm.tqdm(f"Receiving {buf1+'.'+buf2}", total=filesize, unit="B", unit_scale=True) as pbar:
+                while pbar.n != filesize:
                     bytes_read = self.sock.recv(4096).decode()
                     if not bytes_read:
                         pbar.close()
                         f.close()
                         break
                     f.write(bytes_read)
-                    print(len(bytes_read))
                     pbar.update(len(bytes_read))
+                    pbar.refresh()
             pbar.close()
             f.close()
             if data:
@@ -68,7 +68,6 @@ class ClientListener(Thread):
                 self._close()
                 # finish the thread
                 return
-
 
 def main():
     print('Press Ctrl+C to exit')

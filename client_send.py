@@ -18,7 +18,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     # start sending the file
     f = open(filename, "r")
     with tqdm.tqdm(range(filesize), f"Sending {filename}", unit="B", unit_scale=True, unit_divisor=1024) as pbar:
-        while True:
+        while pbar.n != filesize:
             bytes_read = f.read(4096)
             if not bytes_read:
                 pbar.close()
@@ -29,7 +29,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             bytes_read = False
     pbar.close()
     f.close()
-    data = s.recv(1024)
+    data = s.recv(1024).decode()
     # close the socket
     s.close()
 
