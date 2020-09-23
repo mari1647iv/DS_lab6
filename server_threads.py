@@ -42,14 +42,15 @@ class ClientListener(Thread):
     def run(self):
         while True:
             data = self.sock.recv(4096)
+            print(data)
             if data:
                 filename, filesize = data.decode().split(SEPARATOR)
                 buf1, buf2 = filename.split('.')
-                filename = buf1+"_copy."+buf2
+                filename = buf1+"_copy1."+buf2
                 filename = os.path.basename(filename)
                 filesize = int(filesize)
                 f = open(filename, "w")
-                with tqdm.tqdm(f"Receiving {buf1+'.'+buf2}", total=filesize, unit="B", unit_scale=True) as pbar:
+                with tqdm.tqdm(range(filesize), f"Receiving {buf1+'.'+buf2}", unit="B", unit_scale=True) as pbar:
                     while pbar.n != filesize:
                         bytes_read = self.sock.recv(4096).decode()
                         if not bytes_read:
