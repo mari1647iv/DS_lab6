@@ -40,35 +40,35 @@ class ClientListener(Thread):
         print(self.name + ' disconnected')
 
     def run(self):
-        while True:
-            data = self.sock.recv(4096)
-            print(data)
-            if data:
-                filename, filesize = data.decode().split(SEPARATOR)
-                buf1, buf2 = filename.split('.')
-                filename = buf1+"_copy1."+buf2
-                filename = os.path.basename(filename)
-                filesize = int(filesize)
-                f = open(filename, "w")
-                with tqdm.tqdm(range(filesize), f"Receiving {buf1+'.'+buf2}", unit="B", unit_scale=True) as pbar:
-                    while pbar.n != filesize:
-                        bytes_read = self.sock.recv(4096).decode()
-                        if not bytes_read:
-                            pbar.close()
-                            f.close()
-                            break
-                        f.write(bytes_read)
-                        pbar.update(len(bytes_read))
-                        pbar.refresh()
-                pbar.close()
-                f.close()
-                self._clear_echo(buf1+'.'+buf2)
-                self._broadcast(data)
-            else:
-                # if we got no data – client has disconnected
-                self._close()
-                # finish the thread
-                return
+        data = self.sock.recv(4096)
+        if data:
+            filename, filesize = data.decode().split(SEPARATOR)
+            filedest = os.path.basename(filename)
+            if os.path.isfile(filedest):
+                split = filedest.split(".")
+                split[0]= split[0] + "_copy"
+                copy=0
+                while os.path.isfile(filedest):
+                    copy+=1
+                    filedest = ".".join([split[0]+str(copy), split[1]])
+            filesize = int(filesize)
+            f = open(filedest, "w")
+            with tqdm.tqdm(range(filesize), f"Receiving {filename}", unit="B", unit_scale=True) as pbar:
+                while pbar.n != filesize:
+                    bytes_read = self.sock.recv(4096).decode()
+                    if not bytes_read:
+                        pbar.close()
+                        f.close()
+                        break
+                    f.write(bytes_read)
+                    pbar.update(len(bytes_read))
+                    pbar.refresh()
+            pbar.close()
+            f.close()
+            self._clear_echo(filename)
+            self._broadcast(data)
+        self._close()
+            
 
 def main():
     print('Press Ctrl+C to exit')
