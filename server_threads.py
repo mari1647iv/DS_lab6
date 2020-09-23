@@ -41,25 +41,25 @@ class ClientListener(Thread):
 
     def run(self):
         while True:
-            # try to read 1024 bytes from user
-            # this is blocking call, thread will be paused here
             data = self.sock.recv(4096).decode()
             filename, filesize = data.split(SEPARATOR)
+            buf1, buf2 = filename.split('.')
+            filename = buf1+"_copy."+buf2
             filename = os.path.basename(filename)
             filesize = int(filesize)
-            progress = tqdm.tqdm(range(filesize), f"Receiving {filename}", unit="B", unit_scale=True, unit_divisor=1024)
-            with open(filename, "wb") as f:
-                for _ in progress:
-                    # read 1024 bytes from the socket (receive)
-                    bytes_read = self.sock.recv(4096)
-                    if not bytes_read:    
-                        # nothing is received
-                        # file transmitting is done
+            f = open(filename, "w")
+            with tqdm.tqdm(range(filesize), f"Receiving {buf1+'.'+buf2}", unit="B", unit_scale=True, unit_divisor=1024) as pbar:
+                while True:
+                    bytes_read = self.sock.recv(4096).decode()
+                    if not bytes_read:
+                        pbar.close()
+                        f.close()
                         break
-                    # write to the file the bytes we just received
                     f.write(bytes_read)
-                    # update the progress bar
-                    progress.update(len(bytes_read))
+                    print(len(bytes_read))
+                    pbar.update(len(bytes_read))
+            pbar.close()
+            f.close()
             if data:
                 self._clear_echo(data)
                 self._broadcast(data)
