@@ -26,7 +26,7 @@ class ClientListener(Thread):
 
     # broadcast the message with name prefix eg: 'u1> '
     def _broadcast(self, data):
-        data = (self.name + '> ').encode() + data.encode()
+        data = (self.name + '> ').encode() + data +'\n'.encode()
         for u in clients:
             # send to everyone except current client
             if u == self.sock:
@@ -41,27 +41,27 @@ class ClientListener(Thread):
 
     def run(self):
         while True:
-            data = self.sock.recv(4096).decode()
-            filename, filesize = data.split(SEPARATOR)
-            buf1, buf2 = filename.split('.')
-            filename = buf1+"_copy."+buf2
-            filename = os.path.basename(filename)
-            filesize = int(filesize)
-            f = open(filename, "w")
-            with tqdm.tqdm(f"Receiving {buf1+'.'+buf2}", total=filesize, unit="B", unit_scale=True) as pbar:
-                while pbar.n != filesize:
-                    bytes_read = self.sock.recv(4096).decode()
-                    if not bytes_read:
-                        pbar.close()
-                        f.close()
-                        break
-                    f.write(bytes_read)
-                    pbar.update(len(bytes_read))
-                    pbar.refresh()
-            pbar.close()
-            f.close()
+            data = self.sock.recv(4096)
             if data:
-                self._clear_echo(data)
+                filename, filesize = data.decode().split(SEPARATOR)
+                buf1, buf2 = filename.split('.')
+                filename = buf1+"_copy."+buf2
+                filename = os.path.basename(filename)
+                filesize = int(filesize)
+                f = open(filename, "w")
+                with tqdm.tqdm(f"Receiving {buf1+'.'+buf2}", total=filesize, unit="B", unit_scale=True) as pbar:
+                    while pbar.n != filesize:
+                        bytes_read = self.sock.recv(4096).decode()
+                        if not bytes_read:
+                            pbar.close()
+                            f.close()
+                            break
+                        f.write(bytes_read)
+                        pbar.update(len(bytes_read))
+                        pbar.refresh()
+                pbar.close()
+                f.close()
+                self._clear_echo(buf1+'.'+buf2)
                 self._broadcast(data)
             else:
                 # if we got no data – client has disconnected

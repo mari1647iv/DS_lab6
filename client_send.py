@@ -30,7 +30,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     pbar.close()
     f.close()
     data = s.recv(1024).decode()
+    data = s.recv(1024).decode()
     # close the socket
     s.close()
 
-print('Received', repr(data))
+print(data, ' (Received)')
